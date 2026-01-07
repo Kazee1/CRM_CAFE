@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum TipoProduto {
+  CAFE
+  ACESSORIO
+  COMBO
+}
+
+enum StatusProduto {
+  ATIVO
+  INATIVO
+}
+
+enum TipoCafe {
+  GRAO
+  MOIDO
+  CAPSULA
+}
+
+enum TipoCliente {
+  FISICA
+  JURIDICA
+}
+
+enum StatusCliente {
+  ATIVO
+  INATIVO
+}
+
+enum StatusPedido {
+  PENDENTE
+  PAGO
+  EM_PREPARO
+  CONCLUIDO
+  CANCELADO
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+}
+
+/**
+ * =========================
+ * PRODUTO
+ * =========================
+ */
+
+model Produto {
+  id          Int           @id @default(autoincrement())
+  nome        String
+  tipoProduto TipoProduto
+  status      StatusProduto @default(ATIVO)
+
+  precoVenda    Decimal
+  custoUnitario Decimal?
+  estoque       Int?
+
+  // Relacionamentos 1:1
+  cafe      Cafe?
+  acessorio Acessorio?
+
+  // Relacionamentos de combo
+  pedidoItens    PedidoItem[]
+  comboComoBase  ComboItem[]  @relation("ProdutoBase")
+  comboComoCombo ComboItem[]  @relation("ComboProduto")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/**
+ * =========================
+ * CAFÉ
+ * =========================
+ */
+
+model Cafe {
+  id        Int     @id @default(autoincrement())
+  produtoId Int     @unique
+  produto   Produto @relation(fields: [produtoId], references: [id])
+
+  tipoCafe     TipoCafe
+  pontuacaoSCA Float?
+  pesoGramas   Int
+  numeroLote   String
+  dataTorra    DateTime
+  dataValidade DateTime
+  fornecedor   String
+}
+
+/**
+ * =========================
+ * ACESSÓRIO
+ * =========================
+ */
+model Acessorio {
+  id        Int     @id @default(autoincrement())
+  produtoId Int     @unique
+  produto   Produto @relation(fields: [produtoId], references: [id])
+
+  descricao String?
+}
+
+/**
+ * =========================
+ * COMBO
+ * =========================
+ */
+model ComboItem {
+  id Int @id @default(autoincrement())
+
+  comboId    Int
+  produtoId  Int
+  quantidade Int
+
+  combo   Produto @relation("ComboProduto", fields: [comboId], references: [id])
+  produto Produto @relation("ProdutoBase", fields: [produtoId], references: [id])
+}
+
+/**
+ * =====================
+ * MODEL CLIENTE
+ * =====================
+ */
+
+model Cliente {
+  id         Int           @id @default(autoincrement())
+  nome       String
+  tipo       TipoCliente
+  cpfCnpj    String        @unique
+  email      String?
+  telefone   String
+  endereco   String
+  observacao String?
+  status     StatusCliente @default(ATIVO)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  // 🔗 Relacionamentos futuros
+  // historicos   ClienteHistorico[]
+  pedidos Pedido[]
+}
+
+model Pedido {
+  id Int @id @default(autoincrement())
+
+  clienteId Int
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  status StatusPedido @default(PENDENTE)
+  total  Decimal
+
+  itens PedidoItem[]
+
+  observacao String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PedidoItem {
+  id Int @id @default(autoincrement())
+
+  pedidoId  Int
+  produtoId Int
+
+  quantidade Int
+  precoUnit  Decimal
+  subtotal   Decimal
+
+  pedido  Pedido  @relation(fields: [pedidoId], references: [id])
+  produto Produto @relation(fields: [produtoId], references: [id])
+}
