@@ -180,6 +180,3 @@ npx prisma db seed
 
 ---
 
-## 📄 Licença
-
-`UNLICENSED` — código de uso privado.
